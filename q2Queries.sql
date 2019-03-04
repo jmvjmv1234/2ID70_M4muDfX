@@ -5,4 +5,4 @@ SELECT 0;
 SELECT 0;
 SELECT 0;
 SELECT 0;
-SELECT 0;
+SELECT C.CourseName, CO.Year, CO.Quartile FROM SACountPerCO, SRTDCountPerCO, CourseOffers as CO, Courses as C WHERE SACountPerCO.CourseOfferId = CO.CourseOfferId AND C.CourseId = CO.CourseId AND SRTDCountPerCO.CourseOfferId = CO.CourseOfferId AND FLOOR(SRTDCountPerCO.Count / 50) > SACountPerCO.Count;
