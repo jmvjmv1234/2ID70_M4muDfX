@@ -1,2 +1,2 @@
 #!/bin/sh\
-psql -d uni createTables.sql
+psql -d uni -f createTables.sql
