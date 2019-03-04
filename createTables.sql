@@ -22,4 +22,4 @@ CREATE UNLOGGED TABLE StudentAssistants(CourseOfferId int, StudentRegistrationId
 COPY StudentAssistants(CourseOfferId, StudentRegistrationId) FROM '/mnt/ramdisk/tables/StudentAssistants.table' DELIMITER ',' CSV HEADER;
 CREATE UNLOGGED TABLE CourseRegistrations(CourseOfferId int, StudentRegistrationId int, Grade smallint);
 COPY CourseRegistrations(CourseOfferId, StudentRegistrationId, Grade) FROM '/mnt/ramdisk/tables/CourseRegistrations.table' CSV DELIMITER ',' NULL 'null' HEADER;
-ANALYZE VERBOSE;
+ANALYZE VERBOSE
