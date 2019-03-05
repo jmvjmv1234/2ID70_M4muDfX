@@ -9,7 +9,7 @@ WHERE SRTD.StudentId = %1% AND
 	CR.CourseOfferId = CO.CourseOfferId AND
 	CO.CourseId = C.CourseId AND
 	CR.Grade >= 5
-ORDER BY CO.Year, CO.Quartile;
+ORDER BY CO.Year, CO.Quartile, CO.CourseOfferId;
 
 (SELECT StudentId FROM StudentGPA WHERE StudentGPA.GPA>%1%)
 	EXCEPT (SELECT StudentId FROM StudentsNotFullPass)
