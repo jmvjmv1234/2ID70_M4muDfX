@@ -1,118 +1,79 @@
-﻿CREATE UNLOGGED TABLE 
-Students(
-    StudentId int, 
-    StudentName varchar(50), 
-    Address varchar(200),
-    BirthyearStudent smallint, 
-    Gender char);
+﻿CREATE VIEW StudentGPA as( 
+SELECT SRTD.StudentId, SUM(CR.Grade*C.ECTS) / SUM(C.ECTS) as GPA
+FROM StudentRegistrationsToDegrees as SRTD,
+	CourseRegistrations as CR,
+	Courses as C,
+	CourseOffers as CO
+WHERE CR.Grade >= 5 AND
+	SRTD.StudentRegistrationid=CR.StudentRegistrationId AND
+	CR.CourseOfferId=CO.CourseOfferId AND
+	CO.CourseId = C.CourseId
+GROUP BY SRTD.StudentId);
 
-COPY Students(StudentId, StudentName, Address,BirthyearStudent, Gender) 
-    FROM '/home/student/Desktop/mnt/ramdisk/tables/Students.table' 
-    DELIMITER ',' CSV HEADER;
+CREATE VIEW StudentsNotFullPass as(
+SELECT DISTINCT SRTD.StudentId
+FROM CourseRegistrations as CR, 
+	StudentRegistrationsToDegrees as SRTD
+WHERE CR.StudentRegistrationId = SRTD.StudentRegistrationId AND
+CR.Grade < 5);
 
-ALTER TABLE Students add primary key (StudentId);
+CREATE VIEW ECTSPerStudentPerDegree as (
+SELECT 
+	SRTD.StudentId, SUM(C.ECTS) as StudentECTS, SRTD.DegreeId
+FROM 
+	Courses as C,
+	Courseoffers as CO, 
+	CourseRegistrations as CR, 
+	StudentRegistrationsToDegrees as SRTD,
+	Degrees as D
+WHERE 
+	C.CourseId = CO.CourseId AND 
+	CO.CourseOfferId = CR.CourseOfferId AND 
+	SRTD.StudentRegistrationId = CR.StudentRegistrationId AND 
+	CR.Grade >= 5
+GROUP BY 
+	SRTD.DegreeId, SRTD.StudentId);
 
+CREATE VIEW ActiveStudents as(
+SELECT DISTINCT S.StudentId, S.Gender
+FROM Students as S, 
+	StudentRegistrationsToDegrees as SRTD,
+	CourseRegistrations as CR,
+	ECTSPerStudentPerDegree, 
+	Degrees as D
+WHERE
+	CR.Grade > 5 AND
+	SRTD.StudentRegistrationId = CR.StudentRegistrationId AND
+	SRTD.StudentRegistrationId = S.StudentId AND
+	ECTSPerStudentPerDegree.DegreeId = SRTD.DegreeId AND
+	ECTSPerStudentPerDegree.StudentECTS < D.TotalECTS);
 
-CREATE UNLOGGED TABLE 
-Degrees(
-    DegreeId int UNIQUE,
-    Dept varchar(50), 
-    DegreeDescription varchar(200), 
-    TotalECTS smallint);
+CREATE VIEW MaxGradePerCO as(
+SELECT MAX(CR.Grade) as Max_Grade, CR.CourseOfferId
+FROM CourseRegistrations as CR, CourseOffers as CO
+WHERE CO.Year = 2018 AND
+CO.Quartile = 1
+GROUP BY CR.CourseOfferId);
 
-COPY Degrees(DegreeId, Dept, DegreeDescription, TotalECTS) 
-    FROM '/home/student/Desktop/mnt/ramdisk/tables/Degrees.table' 
-    DELIMITER ',' CSV HEADER;
+CREATE VIEW ExcellentStudentsCOCount as(
+SELECT SRTD.StudentId, COUNT(SRTD.StudentId) as Count
+FROM StudentRegistrationsToDegrees as SRTD, CourseRegistrations as CR,
+MaxGradePerCO
+WHERE SRTD.StudentRegistrationId = CR.StudentRegistrationId AND
+CR.CourseOfferId = MaxGradePerCO.CourseOfferId AND
+CR.Grade = MaxGradePerCO.Max_Grade
+GROUP BY SRTD.StudentId);
 
-ALTER TABLE degrees add primary key (DegreeId);
+CREATE VIEW SACountPerCO as(
+SELECT CO.CourseOfferId, COUNT(SA.StudentRegistrationId) as Count
+FROM CourseOffers as CO, StudentAssistants as SA
+WHERE CO.CourseOfferId = SA.CourseOfferId
+GROUP BY CO.CourseOfferId);
 
-
-CREATE UNLOGGED TABLE 
-StudentRegistrationsToDegrees(
-    StudentRegistrationId int,
-    StudentId int, 
-    DegreeId int, 
-    RegistrationYear smallint);
-
-COPY StudentRegistrationsToDegrees( StudentRegistrationId, StudentId, DegreeId, RegistrationYear)
-    FROM '/home/student/Desktop/mnt/ramdisk/tables/StudentRegistrationsToDegrees.table' 
-    DELIMITER ',' CSV HEADER;
-
-ALTER TABLE StudentRegistrationsToDegrees add primary key (StudentRegistrationId);
-
-
-CREATE UNLOGGED TABLE 
-Teachers(
-    TeacherId int UNIQUE, 
-    TeacherName varchar(200), 
-    Address varchar(200), 
-    BirthyearTeacher smallint, 
-    Gender char);
-
-COPY Teachers(TeacherId, TeacherName, Address, BirthyearTeacher, Gender) 
-    FROM '/home/student/Desktop/mnt/ramdisk/tables/Teachers.table' 
-    DELIMITER ',' CSV HEADER;
-
-ALTER TABLE Teachers add primary key (TeacherId);
-
-
-CREATE UNLOGGED TABLE 
-Courses(
-    CourseId int UNIQUE, 
-    CourseName varchar(50), 
-    CourseDescription varchar(200), 
-    DegreeId int,
-    ECTS smallint);
-
-COPY Courses(CourseId, CourseName, CourseDescription, DegreeId, ECTS) FROM
-     '/home/student/Desktop/mnt/ramdisk/tables/Courses.table' DELIMITER
-    ',' CSV HEADER;
-
-ALTER TABLE Courses add primary key (CourseId);
-
-
-CREATE UNLOGGED TABLE 
-CourseOffers(
-    CourseOfferId int,
-    CourseId int, 
-    Year smallint, 
-    Quartile smallint);
-
-COPY CourseOffers(CourseOfferId, CourseId, Year, Quartile) 
-    FROM '/home/student/Desktop/mnt/ramdisk/tables/CourseOffers.table' 
-    DELIMITER ',' CSV HEADER;
-
-ALTER TABLE CourseOffers add primary key (CourseOfferId);
-
-
-CREATE UNLOGGED TABLE 
-TeacherAssignmentsToCourses(
-    CourseOfferId int , 
-    TeacherId int);
-
-COPY TeacherAssignmentsToCourses(CourseOfferId, TeacherId) 
-    FROM '/home/student/Desktop/mnt/ramdisk/tables/TeacherAssignmentsToCourses.table' 
-    DELIMITER ',' CSV HEADER;
-
-
-CREATE UNLOGGED TABLE 
-StudentAssistants(
-    CourseOfferId int, 
-    StudentRegistrationId int);
-
-COPY StudentAssistants(CourseOfferId, StudentRegistrationId) FROM
-     '/home/student/Desktop/mnt/ramdisk/tables/StudentAssistants.table' DELIMITER
-    ',' CSV HEADER;
-
-
-CREATE UNLOGGED TABLE 
-CourseRegistrations(
-    CourseOfferId int, 
-    StudentRegistrationId int, 
-    Grade smallint);
-
-COPY CourseRegistrations(CourseOfferId, StudentRegistrationId, Grade) 
-    FROM '/home/student/Desktop/mnt/ramdisk/tables/CourseRegistrations.table' 
-    CSV DELIMITER ',' NULL 'null' HEADER;
-
-ANALYZE VERBOSE;
+CREATE VIEW SRTDCountPerCO as(
+SELECT CO.CourseOfferId, COUNT(SRTD.StudentId) as Count
+FROM CourseOffers as CO, Courses as C, 
+	StudentRegistrationsToDegrees as SRTD
+WHERE CO.CourseOfferId = C.CourseId AND
+	C.DegreeId = SRTD.DegreeId
+GROUP BY CO.CourseOfferId);
